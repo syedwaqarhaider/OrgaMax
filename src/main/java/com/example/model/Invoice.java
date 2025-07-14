@@ -9,8 +9,16 @@ public class Invoice {
     private String apiKey;
     private String apiSecretKey;
     private String ownerShipId;
+    private String subject;
     private List<String> emails;
 
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
 
     public void setEmails(List<String> emails) {
         this.emails = emails;

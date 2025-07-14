@@ -16,17 +16,20 @@ public class InvoiceController {
     InvoiceService invoiceService;
     @Autowired
     ExcelReaderService excelReaderService;
+    @CrossOrigin
     @PostMapping("/api/invoice")
     public int sendInvoice(@RequestBody Invoice invoice)
     {
-      return invoiceService.sendInvoice(invoice.getApiKey(), invoice.getApiSecretKey(), invoice.getOwnerShipId(), invoice.getEmails());
+      return invoiceService.sendInvoice(invoice.getApiKey(), invoice.getApiSecretKey(), invoice.getOwnerShipId(), invoice.getSubject(), invoice.getEmails());
 
     }
+    @CrossOrigin
     @PostMapping("/api/v2/invoice")
     public String sendInvoice(
             @RequestParam("apiKey") String apiKey,
             @RequestParam("apiSecretKey") String apiSecretKey,
             @RequestParam("ownerShipId") String ownerShipId,
+            @RequestParam ("subject") String subject,
             @RequestPart("file") MultipartFile file) {
 
         // 1️⃣ Read all emails from file
@@ -41,7 +44,7 @@ public class InvoiceController {
             List<String> batchEmail = emails.subList(i, end);
 
             // 4️⃣ Call invoiceService for each batch
-            int status=invoiceService.sendInvoice(apiKey, apiSecretKey, ownerShipId, batchEmail);
+            int status=invoiceService.sendInvoice(apiKey, apiSecretKey, ownerShipId, subject, batchEmail);
             if(status==0)
             {
                 return "Failed: Email Not Sent";

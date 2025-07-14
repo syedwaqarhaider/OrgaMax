@@ -15,7 +15,7 @@ public class InvoiceService {
     private String OWNERSHIP_ID;
     private String TOKEN_URL = "https://api.orgamax.de/openapi/auth/token";
 
-    public int sendInvoice(String apiKey, String apiSecretKey, String ownershipId, List<String> emails)
+    public int sendInvoice(String apiKey, String apiSecretKey, String ownershipId, String subject, List<String> emails)
     {
         API_KEY=apiKey;
         API_SECRET=apiSecretKey;
@@ -23,7 +23,7 @@ public class InvoiceService {
         String token=getToken();
         int invoiceID=getInvoiceID(token);
 
-        return sendingInvoice(token, emails, invoiceID);
+        return sendingInvoice(token, subject, emails, invoiceID);
 
     }
 
@@ -101,7 +101,7 @@ public class InvoiceService {
         }
     }
 
-    public int sendingInvoice(String token, List<String> emails, int invoiceID)
+    public int sendingInvoice(String token, String subject, List<String> emails, int invoiceID)
     {
         String url = "https://api.orgamax.de/openapi" + "/invoice/" + invoiceID + "/send";
 
@@ -113,7 +113,7 @@ public class InvoiceService {
 
         Map<String, Object> body = new HashMap<>();
         body.put("recipients", emails);
-        body.put("subject", "Your invoice by Spring App");
+        body.put("subject", subject);
         body.put("attachmentName", "Rechnung");
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);

@@ -3,6 +3,7 @@ package com.example.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +24,7 @@ public class AuthCallbackController {
     @Value("${orgamax.token_url}")
     private String tokenUrl;
 
+    @CrossOrigin
     @GetMapping("/auth/callback")
     public String handleCallback() {
       /*  System.out.println("Received code: " + code);
@@ -33,6 +35,7 @@ public class AuthCallbackController {
         return "Authorization complete! Token received: Check console.";
     }
 
+    @CrossOrigin
     @GetMapping("/test")
     public String doTest() {
         return "My App";
