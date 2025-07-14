@@ -22,6 +22,7 @@ public class ExcelReaderService {
                 for (String part : parts) {
                     String email = part.trim();
                     if (!email.isBlank()) {
+                        System.out.println("------!!!!"+email);
                         emails.add(email);
                     }
                 }
