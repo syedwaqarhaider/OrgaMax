@@ -56,7 +56,7 @@ public class InvoiceController {
     }
 
     @CrossOrigin
-    @GetMapping("/api/v3/invoice")
+    @PostMapping("/api/v3/invoice")
     public SseEmitter streamInvoice(
             @RequestParam String apiKey,
             @RequestParam String apiSecretKey,
