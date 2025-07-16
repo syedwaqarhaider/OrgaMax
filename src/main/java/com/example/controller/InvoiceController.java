@@ -17,6 +17,7 @@ public class InvoiceController {
     InvoiceService invoiceService;
     @Autowired
     ExcelReaderService excelReaderService;
+
     @CrossOrigin
     @PostMapping("/api/invoice")
     public int sendInvoice(@RequestBody Invoice invoice)
@@ -25,38 +26,75 @@ public class InvoiceController {
 
     }
     @CrossOrigin
-    @PostMapping("/api/v2/invoice")
-    public String sendInvoice(
-            @RequestParam("apiKey") String apiKey,
-            @RequestParam("apiSecretKey") String apiSecretKey,
-            @RequestParam("ownerShipId") String ownerShipId,
-            @RequestParam ("subject") String subject,
-            @RequestPart("file") MultipartFile file) {
-
-        // 1️⃣ Read all emails from file
-        List<String> emails = excelReaderService.readEmails(file);
-
-        // 2️⃣ Define batch size
-        int batchSize = 20;
-
-        // 3️⃣ Process batches one by one
-        for (int i = 0; i < emails.size(); i += batchSize) {
-            int end = Math.min(i + batchSize, emails.size());
-            List<String> batchEmail = emails.subList(i, end);
-
-            // 4️⃣ Call invoiceService for each batch
-            int status=invoiceService.sendInvoice(apiKey, apiSecretKey, ownerShipId, subject, batchEmail);
-            if(status==0)
-            {
-                return "Failed: Email Not Sent";
-            }
-        }
-
-        return "Success : Email Sent";
+    @PostMapping("api/v3/load")
+    public String loadAccounts(@RequestPart("file") MultipartFile file) {
+        return excelReaderService.readAccounts(file);
     }
 
     @CrossOrigin
     @PostMapping("/api/v3/invoice")
+    public SseEmitter sendInvoice(
+            @RequestPart("file") MultipartFile file
+    )  {
+        SseEmitter emitter = new SseEmitter();
+        new Thread(() -> {
+            try {
+                List<String> emails = excelReaderService.readEmails(file);
+                int batchSize = 20;
+                String apiKey=excelReaderService.getApiKey().get(0);
+                String apiSecretKey= excelReaderService.getApiSecretLKey().get(0);
+                String ownerShipId=excelReaderService.getOwnerShipID().get(0);
+                String subject=excelReaderService.getSubject().get(0);
+
+                for (int i = 0; i < emails.size(); i += batchSize) {
+                    int end = Math.min(i + batchSize, emails.size());
+                    List<String> batchEmail = emails.subList(i, end);
+
+                    int status=invoiceService.sendInvoice(apiKey, apiSecretKey, ownerShipId, subject, batchEmail);
+
+                    if(status!=0)
+                    {
+                        emitter.send("Batch " + (i/batchSize + 1) + " completed.");
+                    }
+                    else
+                    {
+                        emitter.send("---> This account has been Completed");
+
+                        excelReaderService.removeAccount(0);
+                        if(excelReaderService.getAccoutCount()>0)
+                        {
+                        apiKey=excelReaderService.getApiKey().get(0);
+                         apiSecretKey= excelReaderService.getApiSecretLKey().get(0);
+                         ownerShipId=excelReaderService.getOwnerShipID().get(0);
+                         subject=excelReaderService.getSubject().get(0);
+                        emitter.send("---> Switched to New Account");
+                        }
+                        else {
+                            emitter.send("---> Account List Empty");
+                            emitter.send("Proccesed Emails : "+(i/batchSize + 1)*20);
+                            break;
+                        }
+                    }
+                }
+                if(excelReaderService.getAccoutCount()>0)
+                {
+                    emitter.send("All the emails prcessed");
+                    emitter.send("Remaining Accounts : "+ excelReaderService.getAccoutCount());
+                    emitter.send("Just Upload new emails only!!!");
+                }
+
+                emitter.complete();
+            } catch (Exception e) {
+                System.out.println("Emitter : "+e.getMessage());
+                emitter.completeWithError(e);
+            }
+        }).start();
+        return emitter;
+    }
+
+
+    @CrossOrigin
+    @PostMapping("/api/v4/invoice")
     public SseEmitter streamInvoice(
             @RequestParam String apiKey,
             @RequestParam String apiSecretKey,

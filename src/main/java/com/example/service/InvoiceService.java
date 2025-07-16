@@ -103,6 +103,7 @@ public class InvoiceService {
 
     public int sendingInvoice(String token, String subject, List<String> emails, int invoiceID)
     {
+        try{
         String url = "https://api.orgamax.de/openapi" + "/invoice/" + invoiceID + "/send";
 
         RestTemplate restTemplate = new RestTemplate();
@@ -132,6 +133,10 @@ public class InvoiceService {
             return 1;
         }
         else {
+            return 0;
+        }
+        } catch (Exception e)
+        {
             return 0;
         }
 

@@ -12,6 +12,42 @@ import java.util.List;
 
 @Service
 public class ExcelReaderService {
+    private List<String> apiKey;
+    private List<String> apiSecretLKey;
+    private List<String> ownerShipID;
+    private List<String> subject;
+
+    public List<String> getApiKey() {
+        return apiKey;
+
+    }
+
+    public List<String> getApiSecretLKey() {
+        return apiSecretLKey;
+    }
+
+    public List<String> getOwnerShipID() {
+        return ownerShipID;
+    }
+
+    public List<String> getSubject() {
+        return subject;
+    }
+
+    public boolean removeAccount(int index)
+    {
+        apiKey.remove(index);
+        apiSecretLKey.remove(index);
+        ownerShipID.remove(index);
+        subject.remove(index);
+        return true;
+    }
+    public int getAccoutCount()
+    {
+      return apiKey.size();
+    }
+
+
 
     public List<String> readEmails(MultipartFile file) {
         List<String> emails = new ArrayList<>();
@@ -36,6 +72,41 @@ public class ExcelReaderService {
             throw new RuntimeException("Failed to read CSV file", e);
         }
         return emails;
+    }
+    public String readAccounts(MultipartFile file) {
+        int i=0;
+        this.apiKey= new ArrayList<>();
+        this.apiSecretLKey=new ArrayList<>();
+        this.ownerShipID= new ArrayList<>();
+        this.subject= new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            boolean firstLine = true;
+            while ((line = br.readLine()) != null) {
+                if (firstLine) {
+                    line = removeBom(line);
+                    firstLine = false;
+                }
+                System.out.println("Line: " + line);
+                String[] parts = line.split(",");
+                apiKey.add(parts[0].trim());
+                apiSecretLKey.add(parts[1].trim());
+                ownerShipID.add(parts[2].trim());
+                subject.add(parts[3].trim());
+            }
+
+        } catch (Exception e) {
+            i=1;
+            throw new RuntimeException("Failed to read CSV file", e);
+        }
+        if (i==0)
+        {
+            return "yes";
+        }
+        else {
+            return "no";
+        }
+
     }
 
     private String removeBom(String line) {
