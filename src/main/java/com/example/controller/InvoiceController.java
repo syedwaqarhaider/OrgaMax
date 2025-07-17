@@ -43,7 +43,7 @@ public class InvoiceController {
     public SseEmitter sendInvoice(
             @RequestPart("file") MultipartFile file
     )  {
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(0L);
         new Thread(() -> {
             try {
                 List<String> emails = excelReaderService.readEmails(file);
