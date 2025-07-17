@@ -44,7 +44,12 @@ public class ExcelReaderService {
     }
     public int getAccoutCount()
     {
-      return apiKey.size();
+        if (apiKey !=null) {
+            return apiKey.size();
+        }
+        else {
+            return 0;
+        }
     }
 
 
