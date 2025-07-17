@@ -28,7 +28,14 @@ public class InvoiceController {
     @CrossOrigin
     @PostMapping("api/v3/load")
     public String loadAccounts(@RequestPart("file") MultipartFile file) {
-        return excelReaderService.readAccounts(file);
+        if(excelReaderService.getAccoutCount()>0)
+        {
+            return "Accounts already remining, no need for new accounts!!!";
+        }
+        else {
+            return excelReaderService.readAccounts(file);
+        }
+
     }
 
     @CrossOrigin
@@ -45,6 +52,13 @@ public class InvoiceController {
                 String apiSecretKey= excelReaderService.getApiSecretLKey().get(0);
                 String ownerShipId=excelReaderService.getOwnerShipID().get(0);
                 String subject=excelReaderService.getSubject().get(0);
+
+                System.out.println("Account Details : ");
+                System.out.println(apiKey);
+                System.out.println(apiSecretKey);
+                System.out.println(ownerShipId);
+                System.out.println(subject);
+                System.out.println("===================================");
 
                 for (int i = 0; i < emails.size(); i += batchSize) {
                     int end = Math.min(i + batchSize, emails.size());
