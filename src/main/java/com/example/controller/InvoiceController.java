@@ -48,60 +48,77 @@ public class InvoiceController {
             try {
                 List<String> emails = excelReaderService.readEmails(file);
                 int batchSize = 20;
-                String apiKey=excelReaderService.getApiKey().get(0);
-                String apiSecretKey= excelReaderService.getApiSecretLKey().get(0);
-                String ownerShipId=excelReaderService.getOwnerShipID().get(0);
-                String subject=excelReaderService.getSubject().get(0);
+                    if (excelReaderService.getAccoutCount()>0) {
+                        String apiKey = excelReaderService.getApiKey().get(0);
+                        String apiSecretKey = excelReaderService.getApiSecretLKey().get(0);
+                        String ownerShipId = excelReaderService.getOwnerShipID().get(0);
+                        String subject = excelReaderService.getSubject().get(0);
 
-                System.out.println("Account Details : ");
-                System.out.println(apiKey);
-                System.out.println(apiSecretKey);
-                System.out.println(ownerShipId);
-                System.out.println(subject);
-                System.out.println("===================================");
+                        System.out.println("Account Details : ");
+                        System.out.println(apiKey);
+                        System.out.println(apiSecretKey);
+                        System.out.println(ownerShipId);
+                        System.out.println(subject);
+                        System.out.println("===================================");
+                        int i=0;
+                        while (i < emails.size()) {
+                            int end = Math.min(i + batchSize, emails.size());
+                            List<String> batchEmail = emails.subList(i, end);
 
-                for (int i = 0; i < emails.size(); i += batchSize) {
-                    int end = Math.min(i + batchSize, emails.size());
-                    List<String> batchEmail = emails.subList(i, end);
+                            int status = invoiceService.sendInvoice(apiKey, apiSecretKey, ownerShipId, subject, batchEmail);
 
-                    int status=invoiceService.sendInvoice(apiKey, apiSecretKey, ownerShipId, subject, batchEmail);
+                            if (status == 1) {
+                                emitter.send("Batch " + (i / batchSize + 1) + " completed.");
+                                i += batchSize;
+                            } else if(status<3){
+                                if(status == 0) {
+                                    emitter.send("---> This account has been Completed");
+                                }
+                                else {
+                                    emitter.send("---> This account dont enabled \"Edit Access\"" +
+                                            "\napiKey : "+excelReaderService.getApiKey().get(0)+"" +
+                                            "\napiSecretKey : "+excelReaderService.getApiSecretLKey().get(0)+"" +
+                                            "\napiOwnerShipId : "+excelReaderService.getOwnerShipID().get(0)+"" +
+                                            "\nSkipping This Account for Now.");
+                                }
+                                excelReaderService.removeAccount(0);
+                                if (excelReaderService.getAccoutCount() > 0) {
+                                    apiKey = excelReaderService.getApiKey().get(0);
+                                    apiSecretKey = excelReaderService.getApiSecretLKey().get(0);
+                                    ownerShipId = excelReaderService.getOwnerShipID().get(0);
+                                    subject = excelReaderService.getSubject().get(0);
+                                    emitter.send("---> Switched to New Account");
+                                } else {
+                                    emitter.send("---> Account List Empty");
+                                    emitter.send("Proccesed Emails : " + (i>0? (i / batchSize + 1) * 20 : 0));
+                                    break;
+                                }
+                            }
+                            else {
+                                emitter.send("Email has wrong format in this Batch : \n" +
+                                        batchEmail);
+                            }
 
-                    if(status!=0)
-                    {
-                        emitter.send("Batch " + (i/batchSize + 1) + " completed.");
-                    }
-                    else
-                    {
-                        emitter.send("---> This account has been Completed");
-
-                        excelReaderService.removeAccount(0);
-                        if(excelReaderService.getAccoutCount()>0)
-                        {
-                        apiKey=excelReaderService.getApiKey().get(0);
-                         apiSecretKey= excelReaderService.getApiSecretLKey().get(0);
-                         ownerShipId=excelReaderService.getOwnerShipID().get(0);
-                         subject=excelReaderService.getSubject().get(0);
-                        emitter.send("---> Switched to New Account");
                         }
-                        else {
-                            emitter.send("---> Account List Empty");
-                            emitter.send("Proccesed Emails : "+(i/batchSize + 1)*20);
-                            break;
+                        if (excelReaderService.getAccoutCount() > 0) {
+                            emitter.send("All the emails prcessed");
+                            emitter.send("Remaining Accounts : " + excelReaderService.getAccoutCount());
+                            emitter.send("Just Upload new emails only!!!");
                         }
+
+                        emitter.complete();
                     }
-                }
-                if(excelReaderService.getAccoutCount()>0)
-                {
-                    emitter.send("All the emails prcessed");
-                    emitter.send("Remaining Accounts : "+ excelReaderService.getAccoutCount());
-                    emitter.send("Just Upload new emails only!!!");
+                    else {
+                        emitter.send("Accounts Not loadded Yet...");
+                        emitter.complete();
+                    }
+
+                } catch(Exception e){
+                    System.out.println("Emitter : " + e.getMessage());
+                    emitter.completeWithError(e);
                 }
 
-                emitter.complete();
-            } catch (Exception e) {
-                System.out.println("Emitter : "+e.getMessage());
-                emitter.completeWithError(e);
-            }
+
         }).start();
         return emitter;
     }
