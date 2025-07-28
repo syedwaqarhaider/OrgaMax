@@ -42,12 +42,25 @@ public class InvoiceController {
             return "Accounts already remining, no need for new accounts!!!";
         }
         else {
-            //return excelReaderService.readAccounts(file); //This is for OrgaMAX
+            return excelReaderService.readAccounts(file); //This is for OrgaMAX
+            //return  excelReaderService.readAccountsSigneasy(file);
+        }
+
+    }
+
+    @CrossOrigin
+    @PostMapping("api/signeasy/load")
+    public String loadAccountsSignEasy(@RequestPart("file") MultipartFile file) {
+        if(excelReaderService.getAccoutCount()>0)
+        {
+            return "Accounts already remining, no need for new accounts!!!";
+        }
+        else {
             return  excelReaderService.readAccountsSigneasy(file);
         }
 
     }
-/*
+
     @CrossOrigin
     @PostMapping("/api/v3/invoice")
     public SseEmitter sendInvoice(
@@ -131,7 +144,7 @@ public class InvoiceController {
 
         }).start();
         return emitter;
-    }*/
+    }
 
     //For Sign Easy
     @CrossOrigin
@@ -148,7 +161,7 @@ public class InvoiceController {
 
     //This for SignEasy
     @CrossOrigin
-    @PostMapping("/api/v3/invoice")
+    @PostMapping("/api/signeasy/invoice")
     public SseEmitter sendInvoice(
             @RequestPart("file") MultipartFile file,
             @RequestPart("message") String message
