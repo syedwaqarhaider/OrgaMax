@@ -3,20 +3,29 @@ package com.example.controller;
 import com.example.model.Invoice;
 import com.example.service.ExcelReaderService;
 import com.example.service.InvoiceService;
+import com.example.service.SignEasyClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.InputStream;
 import java.util.List;
 
 @RestController
 public class InvoiceController {
 
+    private InputStream pdfFile;
+    private String pdfFileName;
+    private long pdfFileSize;
+
     @Autowired
     InvoiceService invoiceService;
     @Autowired
     ExcelReaderService excelReaderService;
+
+    @Autowired
+    SignEasyClientService signEasyClientService;
 
     @CrossOrigin
     @PostMapping("/api/invoice")
@@ -33,11 +42,12 @@ public class InvoiceController {
             return "Accounts already remining, no need for new accounts!!!";
         }
         else {
-            return excelReaderService.readAccounts(file);
+            //return excelReaderService.readAccounts(file); //This is for OrgaMAX
+            return  excelReaderService.readAccountsSigneasy(file);
         }
 
     }
-
+/*
     @CrossOrigin
     @PostMapping("/api/v3/invoice")
     public SseEmitter sendInvoice(
@@ -121,7 +131,104 @@ public class InvoiceController {
 
         }).start();
         return emitter;
+    }*/
+
+    //For Sign Easy
+    @CrossOrigin
+    @PostMapping("/api/v3/upload")
+    public String forwardToSignEasy(@RequestParam("uploadPdfFile") MultipartFile uploadPdfFile) throws Exception {
+        pdfFile=uploadPdfFile.getInputStream();
+        pdfFileName=uploadPdfFile.getOriginalFilename();
+        pdfFileSize=uploadPdfFile.getSize();
+        System.out.println("File : "+pdfFile);
+        System.out.println("File Name : "+pdfFileName);
+        System.out.println("File Size : "+pdfFileSize);
+        return "File has been Uploaded!!!";
     }
+
+    //This for SignEasy
+    @CrossOrigin
+    @PostMapping("/api/v3/invoice")
+    public SseEmitter sendInvoice(
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("message") String message
+    )  {
+        SseEmitter emitter = new SseEmitter(0L);
+        new Thread(() -> {
+            try {
+                List<String> emails = excelReaderService.readEmails(file);
+                int batchSize = 20;
+                if (excelReaderService.getAccoutCount()>0) {
+                    String apiKey = excelReaderService.getApiKey().get(0);
+                    String subject = excelReaderService.getSubject().get(0);
+                    int docId=signEasyClientService.uploadOriginal(apiKey, pdfFile, pdfFileName, pdfFileSize);
+
+                    System.out.println("Account Details : ");
+                    System.out.println(apiKey);
+                    System.out.println(subject);
+                    System.out.println("===================================");
+                    int i=0;
+                    while (i < emails.size()) {
+                        int end = Math.min(i + batchSize, emails.size());
+                        List<String> batchEmail = emails.subList(i, end);
+
+                        int status = signEasyClientService.sendEnvelope(apiKey,
+                                true,
+                                false,
+                                message,
+                                signEasyClientService.getSources(docId, subject),
+                                signEasyClientService.getRecipients(batchEmail),
+                                signEasyClientService.getPlayloadFields());
+
+                        if (status == 1) {
+                            emitter.send("Batch " + (i / batchSize + 1) + " completed.");
+                            i += batchSize;
+                        } else if(status<3){
+                            if(status == 0) {
+                                emitter.send("---> This account has been Completed");
+                            }
+
+                            excelReaderService.removeAccountSignEasy(0);
+                            if (excelReaderService.getAccoutCount() > 0) {
+                                apiKey = excelReaderService.getApiKey().get(0);
+                                subject = excelReaderService.getSubject().get(0);
+                                docId=signEasyClientService.uploadOriginal(apiKey, pdfFile, pdfFileName, pdfFileSize);
+                                emitter.send("---> Switched to New Account");
+                            } else {
+                                emitter.send("---> Account List Empty");
+                                emitter.send("Proccesed Emails : " + (i>0? (i / batchSize + 1) * 20 : 0));
+                                break;
+                            }
+                        }
+                        else {
+                            emitter.send("Email has wrong format in this Batch : \n" +
+                                    batchEmail);
+                        }
+
+                    }
+                    if (excelReaderService.getAccoutCount() > 0) {
+                        emitter.send("All the emails prcessed");
+                        emitter.send("Remaining Accounts : " + excelReaderService.getAccoutCount());
+                        emitter.send("Just Upload new emails only!!!");
+                    }
+
+                    emitter.complete();
+                }
+                else {
+                    emitter.send("Accounts Not loadded Yet...");
+                    emitter.complete();
+                }
+
+            } catch(Exception e){
+                System.out.println("Emitter : " + e.getMessage());
+                emitter.completeWithError(e);
+            }
+
+
+        }).start();
+        return emitter;
+    }
+    /////////////////////////////////////////////
 
 
     @CrossOrigin

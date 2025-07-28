@@ -42,6 +42,12 @@ public class ExcelReaderService {
         subject.remove(index);
         return true;
     }
+    public boolean removeAccountSignEasy(int index)
+    {
+        apiKey.remove(index);
+        subject.remove(index);
+        return true;
+    }
     public int getAccoutCount()
     {
         if (apiKey !=null) {
@@ -98,6 +104,38 @@ public class ExcelReaderService {
                 apiSecretLKey.add(parts[1].trim());
                 ownerShipID.add(parts[2].trim());
                 subject.add(parts[3].trim());
+            }
+
+        } catch (Exception e) {
+            i=1;
+            throw new RuntimeException("Failed to read CSV file", e);
+        }
+        if (i==0)
+        {
+            return "yes";
+        }
+        else {
+            return "no";
+        }
+
+    }
+
+    public String readAccountsSigneasy(MultipartFile file) {
+        int i=0;
+        this.apiKey= new ArrayList<>();
+        this.subject= new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            boolean firstLine = true;
+            while ((line = br.readLine()) != null) {
+                if (firstLine) {
+                    line = removeBom(line);
+                    firstLine = false;
+                }
+                System.out.println("Line: " + line);
+                String[] parts = line.split(",");
+                apiKey.add(parts[0].trim());
+                subject.add(parts[1].trim());
             }
 
         } catch (Exception e) {
