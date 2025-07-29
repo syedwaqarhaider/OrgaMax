@@ -171,7 +171,7 @@ public class InvoiceController {
             try {
                 List<String> emails = excelReaderService.readEmails(file);
                 int batchSize = 20;
-                if (excelReaderService.getAccoutCount()>0) {
+                if (excelReaderService.getSignEasyAccoutCount()>0) {
                     String apiKey = excelReaderService.getSignEasyApiToken().get(0);
                     String subject = excelReaderService.getSignEasySubject().get(0);
                     int docId=signEasyClientService.uploadOriginal(apiKey, pdfFile, pdfFileName, pdfFileSize);
