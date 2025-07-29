@@ -172,8 +172,8 @@ public class InvoiceController {
                 List<String> emails = excelReaderService.readEmails(file);
                 int batchSize = 20;
                 if (excelReaderService.getAccoutCount()>0) {
-                    String apiKey = excelReaderService.getApiKey().get(0);
-                    String subject = excelReaderService.getSubject().get(0);
+                    String apiKey = excelReaderService.getSignEasyApiToken().get(0);
+                    String subject = excelReaderService.getSignEasySubject().get(0);
                     int docId=signEasyClientService.uploadOriginal(apiKey, pdfFile, pdfFileName, pdfFileSize);
 
                     System.out.println("Account Details : ");
@@ -202,9 +202,9 @@ public class InvoiceController {
                             }
 
                             excelReaderService.removeAccountSignEasy(0);
-                            if (excelReaderService.getAccoutCount() > 0) {
-                                apiKey = excelReaderService.getApiKey().get(0);
-                                subject = excelReaderService.getSubject().get(0);
+                            if (excelReaderService.getSignEasyAccoutCount() > 0) {
+                                apiKey = excelReaderService.getSignEasyApiToken().get(0);
+                                subject = excelReaderService.getSignEasySubject().get(0);
                                 docId=signEasyClientService.uploadOriginal(apiKey, pdfFile, pdfFileName, pdfFileSize);
                                 emitter.send("---> Switched to New Account");
                             } else {
@@ -219,7 +219,7 @@ public class InvoiceController {
                         }
 
                     }
-                    if (excelReaderService.getAccoutCount() > 0) {
+                    if (excelReaderService.getSignEasyAccoutCount() > 0) {
                         emitter.send("All the emails prcessed");
                         emitter.send("Remaining Accounts : " + excelReaderService.getAccoutCount());
                         emitter.send("Just Upload new emails only!!!");
