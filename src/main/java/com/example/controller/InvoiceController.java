@@ -149,7 +149,7 @@ public class InvoiceController {
     //For Sign Easy
     @CrossOrigin
     @PostMapping("/api/v3/upload")
-    public String forwardToSignEasy(@RequestParam("uploadPdfFile") MultipartFile uploadPdfFile) throws Exception {
+    public String forwardToSignEasy(@RequestPart("uploadPdfFile") MultipartFile uploadPdfFile) throws Exception {
         pdfFile=uploadPdfFile.getInputStream();
         pdfFileName=uploadPdfFile.getOriginalFilename();
         pdfFileSize=uploadPdfFile.getSize();
