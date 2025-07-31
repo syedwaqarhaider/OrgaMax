@@ -51,7 +51,7 @@ public class InvoiceController {
     @CrossOrigin
     @PostMapping("api/signeasy/load")
     public String loadAccountsSignEasy(@RequestPart("file") MultipartFile file) {
-        if(excelReaderService.getAccoutCount()>0)
+        if(excelReaderService.getSignEasyAccoutCount()>0)
         {
             return "Accounts already remining, no need for new accounts!!!";
         }
