@@ -221,7 +221,7 @@ public class InvoiceController {
                     }
                     if (excelReaderService.getSignEasyAccoutCount() > 0) {
                         emitter.send("All the emails prcessed");
-                        emitter.send("Remaining Accounts : " + excelReaderService.getAccoutCount());
+                        emitter.send("Remaining Accounts : " + excelReaderService.getSignEasyAccoutCount());
                         emitter.send("Just Upload new emails only!!!");
                     }
 
