@@ -105,14 +105,23 @@ public class ExcelReaderService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to read CSV file", e);
         }
-        System.out.println("Total Emails Loaded : "+emails.size());
-        List<String> distinctEmails=emails.stream()
+        List<String> validEmails=emails.stream()
+                .filter(email -> isValidEmail(email))
+                .collect(Collectors.toList());
+
+        System.out.println("Total Emails Loaded : "+validEmails.size());
+        List<String> distinctEmails=validEmails.stream()
                 .distinct()
                 .collect(Collectors.toList());
         System.out.println("Total Emails (After removing duclicates) : "+distinctEmails.size());
 
         return distinctEmails;
     }
+
+    public boolean isValidEmail(String email) {
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    }
+
     public String readAccounts(MultipartFile file) {
         int i=0;
         this.apiKey= new ArrayList<>();
