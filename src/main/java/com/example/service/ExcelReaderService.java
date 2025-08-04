@@ -93,7 +93,7 @@ public class ExcelReaderService {
                     line = removeBom(line);
                     firstLine = false;
                 }
-                System.out.println("Line: " + line);
+                //System.out.println("Line: " + line);
                 String[] parts = line.split(",");
                 for (String part : parts) {
                     String email = part.trim();
@@ -105,9 +105,13 @@ public class ExcelReaderService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to read CSV file", e);
         }
-        return emails.stream()
+        System.out.println("Total Emails Loaded : "+emails.size());
+        List<String> distinctEmails=emails.stream()
                 .distinct()
                 .collect(Collectors.toList());
+        System.out.println("Total Emails (After removing duclicates) : "+distinctEmails.size());
+
+        return distinctEmails;
     }
     public String readAccounts(MultipartFile file) {
         int i=0;
