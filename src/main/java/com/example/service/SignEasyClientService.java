@@ -1,13 +1,16 @@
 package com.example.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
@@ -51,7 +54,7 @@ public class SignEasyClientService {
            return 1;
        }
        catch (Exception e) {
-           System.out.println(e.getMessage());
+           System.out.println("---------I am in Send Envelop "+e.getMessage());
            return 0;
        }
     }
@@ -98,39 +101,83 @@ public class SignEasyClientService {
         return fieldsPayload;
     }
 
-    public int uploadOriginal(String apiToken, InputStream fileStream, String filename, long size) throws Exception {
-        String url = "https://api.signeasy.com/v3" + "/original/";
-        RestTemplate restTemplate = new RestTemplate();
+    /*public int uploadOriginal(String apiToken, InputStream fileStream, String filename, long size) throws Exception {
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        headers.setBearerAuth(apiToken);
+            String url = "https://api.signeasy.com/v3" + "/original/";
+            RestTemplate restTemplate = new RestTemplate();
 
-        InputStreamResource resource = new InputStreamResource(fileStream) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.setBearerAuth(apiToken);
+
+            InputStreamResource resource = new InputStreamResource(fileStream) {
+                @Override
+                public String getFilename() {
+                    return filename;
+                }
+
+                @Override
+                public long contentLength() {
+                    return size;
+                }
+            };
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", resource);
+            body.add("name", filename);
+            body.add("rename_if_exists", "true");
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            ResponseEntity<String> resp = restTemplate.postForEntity(url, requestEntity, String.class);
+
+            if (!resp.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("SignEasy upload error: " +
+                        resp.getStatusCode() + " – " + resp.getBody());
+            }
+
+            JsonNode root = new ObjectMapper().readTree(resp.getBody());
+            JsonNode idNode = root.has("original_file_id") ? root.get("original_file_id") : root.get("id");
+            if (idNode != null && idNode.isInt()) {
+                return idNode.intValue();
+            }
+            throw new RuntimeException("Missing 'id' in SignEasy response: " + resp.getBody());
+        }*/
+
+    public Integer uploadOriginal(String apiToken, byte[] fileBytes, String filename) throws JsonProcessingException {
+        String url = "https://api.signeasy.com/v3/original/";
+
+        ByteArrayResource resource = new ByteArrayResource(fileBytes) {
             @Override public String getFilename() { return filename; }
-            @Override public long contentLength() { return size; }
+            @Override public long contentLength() { return fileBytes.length; }
         };
 
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", resource);
         body.add("name", filename);
         body.add("rename_if_exists", "true");
 
-        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        ResponseEntity<String> resp = restTemplate.postForEntity(url, requestEntity, String.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.setBearerAuth(apiToken);
+        HttpEntity<MultiValueMap<String,Object>> request = new HttpEntity<>(body, headers);
+
+        RestTemplate rest = new RestTemplate();
+        ResponseEntity<String> resp = rest.postForEntity(url, request, String.class);
 
         if (!resp.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("SignEasy upload error: " +
-                    resp.getStatusCode() + " – " + resp.getBody());
+            throw new RuntimeException("Upload failed: " + resp.getStatusCode() + " " + resp.getBody());
         }
 
         JsonNode root = new ObjectMapper().readTree(resp.getBody());
-        JsonNode idNode = root.has("original_file_id") ? root.get("original_file_id") : root.get("id");
-        if (idNode != null && idNode.isInt()) {
+        JsonNode idNode = root.path("original_file_id").isInt()
+                ? root.get("original_file_id")
+                : root.path("id");
+        if (idNode.isInt()) {
             return idNode.intValue();
         }
-        throw new RuntimeException("Missing 'id' in SignEasy response: " + resp.getBody());
+        throw new RuntimeException("Missing ID in response: " + resp.getBody());
     }
 
 
 }
+

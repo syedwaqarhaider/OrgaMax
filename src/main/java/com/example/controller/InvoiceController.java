@@ -16,6 +16,7 @@ import java.util.List;
 public class InvoiceController {
 
     private InputStream pdfFile;
+    private byte[] fileByteArray;
     private String pdfFileName;
     private long pdfFileSize;
 
@@ -150,6 +151,7 @@ public class InvoiceController {
     @CrossOrigin
     @PostMapping("/api/v3/upload")
     public String forwardToSignEasy(@RequestPart("uploadPdfFile") MultipartFile uploadPdfFile) throws Exception {
+        fileByteArray=uploadPdfFile.getBytes();
         pdfFile=uploadPdfFile.getInputStream();
         pdfFileName=uploadPdfFile.getOriginalFilename();
         pdfFileSize=uploadPdfFile.getSize();
@@ -174,7 +176,7 @@ public class InvoiceController {
                 if (excelReaderService.getSignEasyAccoutCount()>0) {
                     String apiKey = excelReaderService.getSignEasyApiToken().get(0);
                     String subject = excelReaderService.getSignEasySubject().get(0);
-                    int docId=signEasyClientService.uploadOriginal(apiKey, pdfFile, pdfFileName, pdfFileSize);
+                    int docId=signEasyClientService.uploadOriginal(apiKey, fileByteArray, pdfFileName);
 
                     System.out.println("Account Details : ");
                     System.out.println(apiKey);
@@ -203,9 +205,19 @@ public class InvoiceController {
 
                             excelReaderService.removeAccountSignEasy(0);
                             if (excelReaderService.getSignEasyAccoutCount() > 0) {
+                                System.out.println("New Account loading.....");
                                 apiKey = excelReaderService.getSignEasyApiToken().get(0);
                                 subject = excelReaderService.getSignEasySubject().get(0);
-                                docId=signEasyClientService.uploadOriginal(apiKey, pdfFile, pdfFileName, pdfFileSize);
+                                System.out.println("Account Details : ");
+                                System.out.println(apiKey);
+                                System.out.println(subject);
+
+                                System.out.println("File : "+pdfFile);
+                                System.out.println("File Name : "+pdfFileName);
+                                System.out.println("File Size : "+pdfFileSize);
+                                System.out.println("===================================");
+                                docId=signEasyClientService.uploadOriginal(apiKey, fileByteArray, pdfFileName);
+
                                 emitter.send("---> Switched to New Account");
                             } else {
                                 emitter.send("---> Account List Empty");
