@@ -181,6 +181,7 @@ public class InvoiceController {
                     System.out.println("Account Details : ");
                     System.out.println(apiKey);
                     System.out.println(subject);
+                    System.out.println("Message : "+ message);
                     System.out.println("===================================");
                     int i=0;
                     while (i < emails.size()) {
